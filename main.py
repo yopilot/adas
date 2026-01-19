@@ -32,6 +32,8 @@ def main():
     # Logic Toggles
     auto_spawn_npcs = False # Default Off for control
     auto_spawn_obs = False
+    
+    is_fullscreen = False
 
     running = True
     
@@ -76,6 +78,13 @@ def main():
                     auto_spawn_npcs = not auto_spawn_npcs
                 if event.key == pygame.K_9:
                     auto_spawn_obs = not auto_spawn_obs
+                    
+                if event.key == pygame.K_F11:
+                    is_fullscreen = not is_fullscreen
+                    if is_fullscreen:
+                        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+                    else:
+                        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
         # --- Update ---
         
