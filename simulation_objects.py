@@ -38,7 +38,8 @@ class Entity:
 class PlayerCar(Entity):
     def __init__(self):
         # Start in middle lane
-        start_x = ROAD_X_START + LANE_WIDTH + (LANE_WIDTH - 50) // 2
+        middle_lane_idx = LANE_COUNT // 2
+        start_x = ROAD_X_START + middle_lane_idx * LANE_WIDTH + (LANE_WIDTH - 50) // 2
         super().__init__(start_x, SCREEN_HEIGHT - 150, 50, 90, COLOR_PLAYER)
         self.load_image(ASSET_PLAYER_CAR)
         self.target_speed = BASE_SPEED
