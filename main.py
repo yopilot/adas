@@ -57,13 +57,13 @@ def main():
                 if event.key == pygame.K_o:
                     # Spawn Obstacle ahead
                     lane_idx = int((player.x - ROAD_X_START) / LANE_WIDTH)
-                    lane_idx = max(0, min(2, lane_idx)) 
+                    lane_idx = max(0, min(LANE_COUNT - 1, lane_idx)) 
                     lane_x = ROAD_X_START + lane_idx * LANE_WIDTH + (LANE_WIDTH - 40)//2
                     obstacles.append(Obstacle(lane_x, -200))
 
                 if event.key == pygame.K_n:
                      # Spawn NPC ahead
-                     lane_idx = random.choice([0, 1, 2])
+                     lane_idx = random.randint(0, LANE_COUNT - 1)
                      lane_x = ROAD_X_START + lane_idx * LANE_WIDTH + (LANE_WIDTH - 40)//2
                      npcs.append(NpcCar(lane_x, -100, random.uniform(BASE_SPEED * 0.5, BASE_SPEED * 1.2)))
                 
