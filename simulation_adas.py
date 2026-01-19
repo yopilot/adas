@@ -132,13 +132,22 @@ class ADAS_System:
         if self.flags['ESA']:
             curr_lane = int((self.player.x - ROAD_X_START) / LANE_WIDTH)
             
+            # Dynamic lookahead based on speed. Minimum 150.
+            lookahead = max(150, self.player.speed * 30)
+
             for obs in obstacles:
                  dist = self.player.y - (obs.y + obs.height)
                  
+                 # Using CENTERS for lateral check
+                 player_center = self.player.x + self.player.width/2
+                 obs_center = obs.x + obs.width/2
+                 lateral_dist = abs(player_center - obs_center)
+
                  # Increased detection range and force for better low-speed evasion
-                 if dist < 120 and dist > -20 and abs(obs.x - self.player.x) < 50:
+                 # Check strict collision corridor + buffer
+                 if dist < lookahead and dist > -20 and lateral_dist < 60:
                       # Too close to brake? SWERVE
-                      swerve_force = 2.0
+                      swerve_force = 2.5
                       
                       # Edge Case Logic: Always swerve towards center if on edge lanes
                       if curr_lane <= 0:
@@ -147,7 +156,7 @@ class ADAS_System:
                           self.player.vx -= swerve_force # Force Left
                       else:
                           # Standard logic: swerve away from obstacle center
-                          if self.player.x < obs.x:
+                          if player_center < obs_center:
                               self.player.vx -= swerve_force # Swerve Left
                           else:
                               self.player.vx += swerve_force # Swerve Right
