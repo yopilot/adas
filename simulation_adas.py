@@ -116,20 +116,23 @@ class ADAS_System:
             
             for obs in obstacles:
                  dist = self.player.y - (obs.y + obs.height)
-                 if dist < 80 and dist > 0 and abs(obs.x - self.player.x) < 40:
+                 
+                 # Increased detection range and force for better low-speed evasion
+                 if dist < 120 and dist > -20 and abs(obs.x - self.player.x) < 50:
                       # Too close to brake? SWERVE
+                      swerve_force = 2.0
                       
                       # Edge Case Logic: Always swerve towards center if on edge lanes
                       if curr_lane <= 0:
-                          self.player.vx += 1.0 # Force Right
+                          self.player.vx += swerve_force # Force Right
                       elif curr_lane >= LANE_COUNT - 1:
-                          self.player.vx -= 1.0 # Force Left
+                          self.player.vx -= swerve_force # Force Left
                       else:
                           # Standard logic: swerve away from obstacle center
                           if self.player.x < obs.x:
-                              self.player.vx -= 1.0 # Swerve Left
+                              self.player.vx -= swerve_force # Swerve Left
                           else:
-                              self.player.vx += 1.0 # Swerve Right
+                              self.player.vx += swerve_force # Swerve Right
             
     def get_lane_center(self):
         # Helper implementation

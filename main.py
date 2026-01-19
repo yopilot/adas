@@ -72,9 +72,9 @@ def main():
                     npcs.clear()
                     obstacles.clear()
                     
-                if event.key == pygame.K_F1:
+                if event.key == pygame.K_8:
                     auto_spawn_npcs = not auto_spawn_npcs
-                if event.key == pygame.K_F2:
+                if event.key == pygame.K_9:
                     auto_spawn_obs = not auto_spawn_obs
 
         # --- Update ---

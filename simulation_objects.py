@@ -3,6 +3,9 @@ import math
 import os
 from simulation_config import *
 
+# Global Asset Cache
+IMAGE_CACHE = {}
+
 class Entity:
     def __init__(self, x, y, width, height, color):
         self.x = x
@@ -17,9 +20,18 @@ class Entity:
         self.image = None
 
     def load_image(self, path):
+        global IMAGE_CACHE
+        
+        # Check cache first
+        if path in IMAGE_CACHE:
+            img = IMAGE_CACHE[path]
+            self.image = pygame.transform.scale(img, (self.width, self.height))
+            return
+
         try:
             if os.path.exists(path):
                 img = pygame.image.load(path).convert_alpha()
+                IMAGE_CACHE[path] = img # Store original in cache
                 self.image = pygame.transform.scale(img, (self.width, self.height))
         except Exception as e:
             print(f"Failed to load {path}: {e}")
@@ -83,6 +95,11 @@ class PlayerCar(Entity):
         # if not adas_flags['LKA']: ...
             
         self.x += self.vx * STEER_SPEED * 0.5
+        
+        # Clamp to road boundaries
+        min_x = ROAD_X_START
+        max_x = ROAD_X_START + ROAD_WIDTH - self.width
+        self.x = max(min_x, min(self.x, max_x))
 
         # Update Rect
         super().update()
