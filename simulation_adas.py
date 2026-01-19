@@ -71,17 +71,25 @@ class ADAS_System:
                      
         # 3. LKA (Lane Keep Assist)
         # Calculate offset from center of nearest lane
-        current_lane_idx = int((self.player.x - ROAD_X_START) / LANE_WIDTH)
-        current_lane_center = ROAD_X_START + (current_lane_idx * LANE_WIDTH) + (LANE_WIDTH - 40)//2
+        # Use center of car to determine lane index, to avoid early snapping to neighbor lane when drifting
+        car_center_x = self.player.x + self.player.width / 2
+        current_lane_idx = int((car_center_x - ROAD_X_START) / LANE_WIDTH)
         
-        dist_from_center = self.player.x - current_lane_center
+        # Clamp lane index to valid range (0 to LANE_COUNT-1)
+        current_lane_idx = max(0, min(LANE_COUNT - 1, current_lane_idx))
+
+        # Target X for the car (top-left corner) to be centered
+        # Lane Start + (LaneWidth - CarWidth) / 2
+        current_lane_target_x = ROAD_X_START + (current_lane_idx * LANE_WIDTH) + (LANE_WIDTH - self.player.width)//2
+        
+        dist_from_center = self.player.x - current_lane_target_x
         
         if self.flags['LKA']:
-            if abs(dist_from_center) > 10: # Threshold
+            if abs(dist_from_center) > 5: # Tighter threshold
                 self.player.sensor_lka_active = True
                 # Steer back
-                correction = -0.1 * dist_from_center
-                self.player.vx += correction * 0.1
+                correction = -0.05 * dist_from_center # Gentler correction
+                self.player.vx += correction * 0.2
                 
         # 4. BSD (Blind Spot Detection)
         # Check cars in adjacent lanes nearby

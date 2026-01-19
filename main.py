@@ -95,7 +95,11 @@ def main():
         # NPCs
         npc_timer += dt
         if auto_spawn_npcs and npc_timer > 2.0:
-            lane_idx = random.randint(0, LANE_COUNT - 1)
+            # Exclude right-most 2 lanes (Lanes 3 and 4)
+            # Valid lanes: 0, 1, 2
+            max_npc_lane = max(0, LANE_COUNT - 3) 
+            lane_idx = random.randint(0, max_npc_lane)
+            
             lane_x = ROAD_X_START + lane_idx * LANE_WIDTH + (LANE_WIDTH - 40)//2
             # Spawn ahead or behind
             # For ACC, we want cars ahead that are kinda slow
@@ -116,8 +120,12 @@ def main():
         if auto_spawn_obs and obs_timer > 5.0 and random.random() < 0.3:
             lane_idx = int((player.x - ROAD_X_START) / LANE_WIDTH)
             lane_idx = max(0, min(LANE_COUNT - 1, lane_idx)) # Spawn in player lane to force AEB/ESA
-            lane_x = ROAD_X_START + lane_idx * LANE_WIDTH + (LANE_WIDTH - 40)//2
-            obstacles.append(Obstacle(lane_x, -200)) # Spawn far ahead
+            
+            # Don't spawn obstacles if player is in the "safe" right lanes
+            if lane_idx <= LANE_COUNT - 3:
+                lane_x = ROAD_X_START + lane_idx * LANE_WIDTH + (LANE_WIDTH - 40)//2
+                obstacles.append(Obstacle(lane_x, -200)) # Spawn far ahead
+            
             obs_timer = 0
 
         # 4. Entity Updates (Relative movement)
