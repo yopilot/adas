@@ -33,6 +33,11 @@ def main():
     auto_spawn_npcs = False # Default Off for control
     auto_spawn_obs = False
     
+    # Interference Scenario State
+    interference_mode = False
+    interference_timer = 0
+    show_interference_error = False
+    
     is_fullscreen = False
     
     # Graphs Data
@@ -59,6 +64,70 @@ def main():
                 if event.key == pygame.K_4: adas.flags['BSD'] = not adas.flags['BSD']
                 if event.key == pygame.K_5: adas.flags['ESA'] = not adas.flags['ESA']
                 
+                # --- INTERFERENCE SCENARIO (Ctrl+E / Ctrl+P) ---
+                if (event.key == pygame.K_e and (keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL])) or \
+                   (event.key == pygame.K_p and (keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL])):
+                    # Activate Radar Interference Scenario
+                    interference_mode = True
+                    interference_timer = pygame.time.get_ticks()
+                    show_interference_error = False
+                    
+                    # 1. Clear existing entities
+                    npcs.clear()
+                    obstacles.clear()
+                    auto_spawn_npcs = False
+                    
+                    # 2. Spawn 5 REDcars upstream (Moving towards player)
+                    # Semi-circle formation ahead of player
+                    # Player is at Y ~650. We spawn them at Y ~100 to 200.
+                    center_spawn_x = player.x
+                    spawn_y_base = player.y - 500
+                    
+                    for i in range(5):
+                        # V-Shape / Semi-circle
+                        # -2, -1, 0, 1, 2 lane offsets roughly
+                        lane_offset = i - 2
+                        l_x = center_spawn_x + (lane_offset * LANE_WIDTH * 0.8)
+                        l_x = max(ROAD_X_START, min(ROAD_X_START + ROAD_WIDTH - 50, l_x))
+                        
+                        y_pos = spawn_y_base - abs(lane_offset) * 50 
+                        
+                        # SPEED: Negative means moving AGAINST global traffic flow (Down the screen fast)
+                        # Relative speed logic:
+                        # rel_speed = self.lane_speed - world_speed
+                        # We want them to approach slowly from top.
+                        # If player.speed is 8.0. World speed is 8.0. 
+                        # To approach from top (move down faster than player moves up?? No.)
+                        # Player stays at Y=650. World moves down.
+                        # If NPC Y moves down faster than background, it hits player.
+                        # NPC Y delta = (lane_speed - player_speed).
+                        # We want Y delta to be positive (come down).
+                        # So lane_speed should be > player_speed? No.
+                        # lane_speed is absolute speed on road.
+                        # If oncoming structure: lane_speed = -5. (Moving South).
+                        # world_speed (Player moving North) = 8.
+                        # rel_speed = -5 - 8 = -13.
+                        # self.y -= (-13) -> self.y += 13.
+                        # They will fly down at 13 px/frame. Too fast.
+                        
+                        # Cheat for visual effect:
+                        # We want them to linger on screen for 5 seconds.
+                        # So relative speed should be small positive, e.g. +1 or +0.5.
+                        # rel_speed = lane_speed - world_speed = -0.5 (moves up slowly) OR +0.5 (moves down).
+                        # If we want them to approach from FRONT (Top), they must move DOWN screen.
+                        # So we need self.y increasing.
+                        # self.y -= rel_speed. So rel_speed must be negative.
+                        # lane_speed - world_speed = -1.
+                        # lane_speed = world_speed - 1.
+                        # So if player goes 8, NPC goes 7 (same direction, just slower).
+                        # BUT visuals must be flipped (Red, oncoming).
+                        # So we set is_oncoming=True, but physically they are "slow cars driving in reverse" effectively.
+                        # To the player it looks like they are driving fast towards them if we ignore the road stripes speed.
+                        
+                        ghost_car = NpcCar(l_x, y_pos, player.speed - 3.0, is_oncoming=True) 
+                        ghost_car.has_radar = True 
+                        npcs.append(ghost_car)
+
                 # Manual Controls
                 if event.key == pygame.K_o:
                     # Spawn Obstacle ahead
@@ -185,6 +254,65 @@ def main():
              font_s = pygame.font.SysFont("arial", 12, bold=True)
              lbl = font_s.render("TARGET LOCK", True, (0, 255, 0))
              screen.blit(lbl, (rect.right + 5, rect.top))
+
+        # INTERFERENCE SCENARIO OVERLAY
+        if interference_mode:
+            current_t = pygame.time.get_ticks()
+            elapsed = current_t - interference_timer
+            
+            # Dashboard Center X (Right side area)
+            # Road ends at ROAD_X_START + ROAD_WIDTH
+            right_side_start = ROAD_X_START + ROAD_WIDTH
+            right_side_width = SCREEN_WIDTH - right_side_start
+            dash_center_x = right_side_start + right_side_width // 2
+            
+            # Phase 1: Explanation Text (0-5s) - ON RIGHT SIDE
+            if elapsed < 5000:
+                # Flashing warning or static text
+                header_text =font_feedback.render("INTERFERENCE DETECTED", True, (255, 255, 0))
+                # Blink effect
+                if (current_t // 500) % 2 == 0:
+                    screen.blit(header_text, (dash_center_x - header_text.get_width()//2, 100))
+                    
+                # Small technical text
+                font_small = pygame.font.SysFont("consolas", 18)
+                info_lines = [
+                    "Radar-to-Radar Interference",
+                    "Uncoordinated FMCW Waves",
+                    "Ghost targets accumulating...",
+                    "Noise floor elevating..."
+                ]
+                for i, line in enumerate(info_lines):
+                    s = font_small.render(line, True, (255, 200, 200))
+                    screen.blit(s, (dash_center_x - s.get_width()//2, 150 + i*25))
+            
+            # Phase 2: CRITICAL ERROR POPS (After 5s) - ON RIGHT SIDE
+            else:
+                 # Big red error overlay (Full screen tint is fine)
+                 s = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+                 s.fill((50, 0, 0, 100)) # Red tint
+                 screen.blit(s, (0,0))
+                 
+                 # Big Box - Centered on Dashboard
+                 box_w, box_h = 500, 300
+                 err_box = pygame.Rect(dash_center_x - box_w//2, SCREEN_HEIGHT//2 - box_h//2, box_w, box_h)
+                 
+                 pygame.draw.rect(screen, (0, 0, 0), err_box)
+                 pygame.draw.rect(screen, (255, 0, 0), err_box, 4)
+                 
+                 # Text
+                 font_huge = pygame.font.SysFont("arial", 48, bold=True)
+                 msg = font_huge.render("SYSTEM FAILURE", True, (255, 0, 0))
+                 screen.blit(msg, (dash_center_x - msg.get_width()//2, err_box.centery - 80))
+                 
+                 font_med = pygame.font.SysFont("arial", 24)
+                 msg2 = font_med.render("RADAR SENSOR SATURATION", True, (255, 255, 255))
+                 screen.blit(msg2, (dash_center_x - msg2.get_width()//2, err_box.centery + 10))
+                 
+                 # Exit hint
+                 font_tiny = pygame.font.SysFont("arial", 20)
+                 msg3 = font_tiny.render("Press 'C' to clear scenario", True, (150, 150, 150))
+                 screen.blit(msg3, (dash_center_x - msg3.get_width()//2, err_box.centery + 60))
         
         player.draw(screen)
         

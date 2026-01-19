@@ -175,18 +175,70 @@ class PlayerCar(Entity):
 
 
 class NpcCar(Entity):
-    def __init__(self, x, y, speed):
-        super().__init__(x, y, 50, 90, COLOR_NPC)
+    def __init__(self, x, y, speed, is_oncoming=False):
+        color = (255, 50, 50) if is_oncoming else COLOR_NPC
+        super().__init__(x, y, 50, 90, color)
         self.load_image(ASSET_NPC_CAR)
-        self.lane_speed = speed # Relative to world scroll
+        self.lane_speed = speed 
+        self.has_radar = False 
+        self.is_oncoming = is_oncoming
         
+        # If oncoming (Red hostile car), tint the image or ignore it
+        if self.is_oncoming and self.image:
+             # Create a red tinted version
+             red_surf = pygame.Surface(self.image.get_size()).convert_alpha()
+             red_surf.fill((255, 0, 0))
+             self.image.blit(red_surf, (0,0), special_flags=pygame.BLEND_MULT)
+
     def update_relative(self, world_speed):
-        # Move down/up based on relative speed
-        # If NPC is faster than world, it moves UP (negative Y)
-        # If NPC is slower, it moves DOWN (positive Y)
         rel_speed = self.lane_speed - world_speed
-        self.y -= rel_speed * 1 # Scale factor
+        self.y -= rel_speed * 1 
         self.rect.y = int(self.y)
+
+    def draw(self, surface):
+        # Optional Radar Interference Logic
+        if self.has_radar:
+            # Draw chaotic radar waves
+            # If oncoming, waves usually come from front, but for chaos we keep omni or direct
+            center_x = self.x + self.width // 2
+            center_y = self.y + (0 if self.is_oncoming else self.height)
+            
+            # Interference is chaotic, so random offsets
+            current_time = pygame.time.get_ticks()
+            num_waves = 3
+            max_dist = 220
+            speed = 0.2
+            period = max_dist / speed 
+
+            radar_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+            
+            # Red/Purple chaotic waves
+            base_color = (255, 0, 0) if self.is_oncoming else (255, 0, 255)
+            
+            for i in range(num_waves):
+                t = (current_time + (i * period / num_waves)) % period
+                dist = t * speed
+                alpha = int(200 * (1 - dist / max_dist))
+                color = (*base_color, alpha)
+                
+                rect = pygame.Rect(center_x - dist, center_y - dist, dist * 2, dist * 2)
+                
+                # If oncoming, they shoot DOWN towards player. Else UP/Omni.
+                # Chaotic = Circle
+                pygame.draw.circle(radar_surf, color, (center_x, center_y), int(dist), 3)
+                
+            surface.blit(radar_surf, (0,0))
+            
+        # Draw body (flipped if oncoming)
+        if self.image:
+             if self.is_oncoming:
+                 # Rotate 180
+                 rot_img = pygame.transform.rotate(self.image, 180)
+                 surface.blit(rot_img, self.rect)
+             else:
+                 surface.blit(self.image, self.rect)
+        else:
+            pygame.draw.rect(surface, self.color, self.rect, border_radius=4)
 
 class Obstacle(Entity):
     def __init__(self, x, y):
