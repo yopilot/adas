@@ -13,6 +13,10 @@ class ADAS_System:
             'ESA': False
         }
         
+        # State for Visualization
+        self.current_acc_target = None
+        self.current_distance = 0.0
+        
     def update(self, npcs, obstacles, keys):
         # Reset sensor visuals
         self.player.sensor_acc_active = False
@@ -36,6 +40,9 @@ class ADAS_System:
                     if dist < closest_dist:
                         closest_dist = dist
                         closest_car = car
+                        
+        self.current_acc_target = closest_car
+        self.current_distance = closest_dist if closest_car else 0.0
 
         if self.flags['ACC']:
             self.player.sensor_acc_active = True

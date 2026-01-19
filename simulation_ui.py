@@ -209,6 +209,37 @@ class UI_Manager:
         keys_x = SCREEN_WIDTH - 250
         keys_y = SCREEN_HEIGHT - 250
         self.draw_keys(surface, keys, keys_x, keys_y)
+        
+    def draw_graph(self, surface, x, y, width, height, data, title, color_line, max_val_ref=200):
+        # Draw Background
+        rect = pygame.Rect(x, y, width, height)
+        s = pygame.Surface((width, height), pygame.SRCALPHA)
+        s.fill((0, 0, 0, 150))
+        surface.blit(s, (x, y))
+        pygame.draw.rect(surface, (100, 100, 100), rect, 1)
+        
+        # Title
+        lbl = self.font_small.render(title, True, (200, 200, 200))
+        surface.blit(lbl, (x + 5, y + 5))
+        
+        if len(data) < 2: return
+        
+        # Plot points
+        # Map X: index -> pixel. Map Y: val -> pixel
+        points = []
+        step_x = width / len(data)
+        
+        for i, val in enumerate(data):
+            px = x + i * step_x
+            # Clamp val for plotting
+            val = max(0, min(val, max_val_ref))
+            # Invert Y (0 is bottom)
+            normalized_h = (val / max_val_ref) * (height - 20)
+            py = (y + height) - 10 - normalized_h
+            points.append((px, py))
+            
+        if len(points) > 1:
+            pygame.draw.lines(surface, color_line, False, points, 2)
 
     def draw_indicator(self, surface, x, y, text, color, width=50, height=25):
         rect = pygame.Rect(x, y, width, height)

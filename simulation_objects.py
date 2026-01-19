@@ -105,22 +105,63 @@ class PlayerCar(Entity):
         super().update()
         
     def draw(self, surface):
-        # Draw Vision Cone (Sensors)
+        # Draw Vision Cone (Sensors) - RADAR VISUALIZATION
         center_x = self.x + self.width // 2
         center_y = self.y
         
         if self.sensor_acc_active or self.sensor_aeb_active:
-            # Draw radar cone
-            points = [
-                (center_x, center_y),
-                (center_x - 60, center_y - 200),
-                (center_x + 60, center_y - 200)
-            ]
+            # Radar Waves Visualization (Waves go out and come back)
+            current_time = pygame.time.get_ticks()
             
-            color = (50, 255, 100, 100) if self.sensor_acc_active else (255, 50, 50, 100)
-            s_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-            pygame.draw.polygon(s_surf, color, points)
-            surface.blit(s_surf, (0,0))
+            # Create a transparent surface for the waves
+            radar_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+            
+            # 1. Transmitter Waves (Outward)
+            # Cyan/Green waves moving away
+            base_color = (0, 255, 255) # Default Cyan
+            if self.sensor_aeb_active: base_color = (255, 50, 50) # Red
+            elif self.sensor_acc_active: base_color = (50, 255, 100) # Green
+            
+            # Draw expanding arcs
+            num_waves = 4
+            max_dist = 400
+            speed = 0.4 # px/ms
+            period = max_dist / speed 
+            
+            for i in range(num_waves):
+                # Offset time for each wave
+                t = (current_time + (i * period / num_waves)) % period
+                dist = t * speed
+                
+                # Alpha fade (strong near car, weak far away)
+                alpha = int(255 * (1 - dist / max_dist))
+                color = (*base_color, alpha)
+                
+                # Draw arc
+                rect = pygame.Rect(center_x - dist, center_y - dist, dist * 2, dist * 2)
+                # Angles: North is pi/2. +/- 0.5 radians (approx 30 deg width)
+                start_angle = math.pi/2 - 0.5
+                end_angle = math.pi/2 + 0.5
+                pygame.draw.arc(radar_surf, color, rect, start_angle, end_angle, 3)
+
+            # 2. Receiver Waves (Inward - "Return Signal")
+            # Only if active detection
+            if self.sensor_acc_active or self.sensor_aeb_active:
+                return_color = (255, 255, 0) # Yellow return signal
+                
+                for i in range(num_waves):
+                    t = (current_time + (i * period / num_waves)) % period
+                    # Invert distance: Start at max, go to 0
+                    dist = max_dist - (t * speed)
+                    
+                    # Brighten as it returns
+                    alpha = int(255 * (1 - (dist/max_dist))) 
+                    color = (*return_color, alpha)
+                    
+                    rect = pygame.Rect(center_x - dist, center_y - dist, dist * 2, dist * 2)
+                    pygame.draw.arc(radar_surf, color, rect, start_angle, end_angle, 2)
+            
+            surface.blit(radar_surf, (0,0))
 
         # BSD Sensors
         if self.sensor_bsd_left:

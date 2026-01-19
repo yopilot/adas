@@ -34,6 +34,10 @@ def main():
     auto_spawn_obs = False
     
     is_fullscreen = False
+    
+    # Graphs Data
+    dist_history = []
+    max_history_points = 50
 
     running = True
     
@@ -90,6 +94,11 @@ def main():
         
         # 0. Core ADAS Processing
         adas.update(npcs, obstacles, keys)
+        
+        # Update Graph Data
+        dist_history.append(adas.current_distance)
+        if len(dist_history) > max_history_points:
+            dist_history.pop(0)
         
         # 1. Player Update
         # Pass ADAS flags and speed info to player controller
@@ -166,10 +175,25 @@ def main():
         for car in npcs: car.draw(screen)
         for obs in obstacles: obs.draw(screen)
         
+        # Draw ACC Lock-on Box
+        if adas.flags['ACC'] and adas.current_acc_target:
+             t = adas.current_acc_target
+             # Green brackets cornering the target car
+             rect = t.rect.inflate(10, 10)
+             pygame.draw.rect(screen, (0, 255, 0), rect, 2, border_radius=5)
+             # "LOCK" text
+             font_s = pygame.font.SysFont("arial", 12, bold=True)
+             lbl = font_s.render("TARGET LOCK", True, (0, 255, 0))
+             screen.blit(lbl, (rect.right + 5, rect.top))
+        
         player.draw(screen)
         
         # UI Overlay
         ui.draw(screen, adas, player, keys, auto_spawn_npcs, auto_spawn_obs, is_fullscreen)
+        
+        # Draw Graph (Bottom Right, under dashboard)
+        # Dashboard is around Y=60 to Y=300 approx
+        ui.draw_graph(screen, SCREEN_WIDTH - 380, SCREEN_HEIGHT - 120, 360, 100, dist_history, "DISTANCE TO OBJECT (m)", (0, 255, 255))
         
         # Crash/Safety Feedback
         # Simple collision check
