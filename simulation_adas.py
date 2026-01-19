@@ -112,15 +112,24 @@ class ADAS_System:
         # 5. ESA (Evasive Steer Assist)
         # If AEB fails (too close) or toggled, swerve
         if self.flags['ESA']:
+            curr_lane = int((self.player.x - ROAD_X_START) / LANE_WIDTH)
+            
             for obs in obstacles:
                  dist = self.player.y - (obs.y + obs.height)
                  if dist < 80 and dist > 0 and abs(obs.x - self.player.x) < 40:
                       # Too close to brake? SWERVE
-                      # Determine direction
-                      if self.player.x < obs.x:
-                          self.player.vx -= 1.0 # Swerve Left
+                      
+                      # Edge Case Logic: Always swerve towards center if on edge lanes
+                      if curr_lane <= 0:
+                          self.player.vx += 1.0 # Force Right
+                      elif curr_lane >= LANE_COUNT - 1:
+                          self.player.vx -= 1.0 # Force Left
                       else:
-                          self.player.vx += 1.0 # Swerve Right
+                          # Standard logic: swerve away from obstacle center
+                          if self.player.x < obs.x:
+                              self.player.vx -= 1.0 # Swerve Left
+                          else:
+                              self.player.vx += 1.0 # Swerve Right
             
     def get_lane_center(self):
         # Helper implementation
