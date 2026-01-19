@@ -62,7 +62,7 @@ class PlayerCar(Entity):
         self.sensor_aeb_active = False
         self.sensor_bsd_left = False
         self.sensor_bsd_right = False
-        self.sensor_lka_active = False
+        self.sensor_lca_active = False
 
     def update(self, keys_pressed, adas_flags, road_speed):
         # Manual Control Logic vs ADAS
@@ -92,7 +92,7 @@ class PlayerCar(Entity):
         self.vx *= 0.85 # Higher damping for more "grip", less slide
         
         # Remove artificial drift as requested
-        # if not adas_flags['LKA']: ...
+        # if not adas_flags['LCA']: ...
             
         self.x += self.vx * STEER_SPEED * 0.5
         

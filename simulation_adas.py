@@ -7,7 +7,7 @@ class ADAS_System:
         self.player = player
         self.flags = {
             'ACC': False,
-            'LKA': False,
+            'LCA': False,
             'AEB': False,
             'BSD': False,
             'ESA': False
@@ -19,7 +19,7 @@ class ADAS_System:
         self.player.sensor_aeb_active = False
         self.player.sensor_bsd_left = False
         self.player.sensor_bsd_right = False
-        self.player.sensor_lka_active = False
+        self.player.sensor_lca_active = False
         
         # 1. ACC (Adaptive Cruise Control)
         # Scan for car in front
@@ -69,7 +69,7 @@ class ADAS_System:
                      self.player.sensor_aeb_active = True
                      self.player.speed = 0 # FULL STOP
                      
-        # 3. LKA (Lane Keep Assist)
+        # 3. LCA (Lane Centering Assistance)
         # Calculate offset from center of nearest lane
         # Use center of car to determine lane index, to avoid early snapping to neighbor lane when drifting
         car_center_x = self.player.x + self.player.width / 2
@@ -84,9 +84,9 @@ class ADAS_System:
         
         dist_from_center = self.player.x - current_lane_target_x
         
-        if self.flags['LKA']:
+        if self.flags['LCA']:
             if abs(dist_from_center) > 5: # Tighter threshold
-                self.player.sensor_lka_active = True
+                self.player.sensor_lca_active = True
                 # Steer back
                 correction = -0.05 * dist_from_center # Gentler correction
                 self.player.vx += correction * 0.2
@@ -108,14 +108,17 @@ class ADAS_System:
                      right_clear = False
                      
         if self.flags['BSD']:
-             # Override input if blocked
+             # Resistance Logic (Force Feedback Simulation)
              input_left = keys[pygame.K_a] or keys[pygame.K_LEFT]
              input_right = keys[pygame.K_d] or keys[pygame.K_RIGHT]
 
              if input_left and not left_clear:
-                 self.player.vx = max(0, self.player.vx) # Cancel left movement
+                 # Instead of blocking, apply strong resistance
+                 # Reduce velocity to 10% effective, making it "heavy"
+                 self.player.vx *= 0.1 
+                 
              if input_right and not right_clear:
-                 self.player.vx = min(0, self.player.vx) # Cancel right movement
+                 self.player.vx *= 0.1
 
         # 5. ESA (Evasive Steer Assist)
         # If AEB fails (too close) or toggled, swerve

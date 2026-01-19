@@ -50,7 +50,7 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 # Toggle ADAS
                 if event.key == pygame.K_1: adas.flags['ACC'] = not adas.flags['ACC']
-                if event.key == pygame.K_2: adas.flags['LKA'] = not adas.flags['LKA']
+                if event.key == pygame.K_2: adas.flags['LCA'] = not adas.flags['LCA']
                 if event.key == pygame.K_3: adas.flags['AEB'] = not adas.flags['AEB']
                 if event.key == pygame.K_4: adas.flags['BSD'] = not adas.flags['BSD']
                 if event.key == pygame.K_5: adas.flags['ESA'] = not adas.flags['ESA']
@@ -152,8 +152,8 @@ def main():
             x = ROAD_X_START + i * LANE_WIDTH
             if i == 0 or i == LANE_COUNT:
                 # Solid edge lines
-                # Active LKA glows the edge lines
-                c = COLOR_LANE_MARKER_ACTIVE if (adas.flags['LKA'] and player.sensor_lka_active) else COLOR_LANE_MARKER
+                # Active LCA glows the edge lines
+                c = COLOR_LANE_MARKER_ACTIVE if (adas.flags['LCA'] and player.sensor_lca_active) else COLOR_LANE_MARKER
                 pygame.draw.line(screen, c, (x, 0), (x, SCREEN_HEIGHT), 5)
             else:
                 # Dashed lines for inner lanes
@@ -169,7 +169,7 @@ def main():
         player.draw(screen)
         
         # UI Overlay
-        ui.draw(screen, adas, player.speed, keys, auto_spawn_npcs, auto_spawn_obs)
+        ui.draw(screen, adas, player, keys, auto_spawn_npcs, auto_spawn_obs, is_fullscreen)
         
         # Crash/Safety Feedback
         # Simple collision check
