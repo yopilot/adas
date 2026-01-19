@@ -124,8 +124,8 @@ class PlayerCar(Entity):
             
             # Draw expanding arcs
             num_waves = 4
-            max_dist = 400
-            speed = 0.4 # px/ms
+            max_dist = 250  # Reduced from 400
+            speed = 0.15    # Reduced from 0.4 for slower animation
             period = max_dist / speed 
             
             for i in range(num_waves):
@@ -139,9 +139,9 @@ class PlayerCar(Entity):
                 
                 # Draw arc
                 rect = pygame.Rect(center_x - dist, center_y - dist, dist * 2, dist * 2)
-                # Angles: North is pi/2. +/- 0.5 radians (approx 30 deg width)
-                start_angle = math.pi/2 - 0.5
-                end_angle = math.pi/2 + 0.5
+                # Angles: North is pi/2. Reduced spread: +/- 0.3 radians
+                start_angle = math.pi/2 - 0.3
+                end_angle = math.pi/2 + 0.3
                 pygame.draw.arc(radar_surf, color, rect, start_angle, end_angle, 3)
 
             # 2. Receiver Waves (Inward - "Return Signal")
